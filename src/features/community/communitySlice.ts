@@ -5,6 +5,7 @@ import {
   CommunityModeratorView,
   CommunityView,
   GetCommunityResponse,
+  SortType,
 } from "lemmy-js-client";
 import { getHandle } from "../../helpers/lemmy";
 import { db } from "../../services/db";
@@ -13,6 +14,7 @@ import { without } from "lodash";
 interface CommunityState {
   communityByHandle: Dictionary<CommunityView>;
   modsByHandle: Dictionary<CommunityModeratorView[]>;
+  sortByHandle: Dictionary<SortType>;
   trendingCommunities: CommunityView[];
   favorites: string[];
 }
@@ -20,6 +22,7 @@ interface CommunityState {
 const initialState: CommunityState = {
   communityByHandle: {},
   modsByHandle: {},
+  sortByHandle: {},
   trendingCommunities: [],
   favorites: [],
 };
@@ -42,6 +45,9 @@ export const communitySlice = createSlice({
     setFavorites: (state, action: PayloadAction<string[]>) => {
       state.favorites = action.payload;
     },
+    setSortByHandle: (state, action: PayloadAction<Dictionary<SortType>>) => {
+      state.sortByHandle = action.payload;
+    },
     receivedCommunityResponse: (
       state,
       action: PayloadAction<GetCommunityResponse>,
@@ -60,6 +66,7 @@ export const {
   recievedTrendingCommunities,
   resetCommunities,
   setFavorites,
+  setSortByHandle,
   receivedCommunityResponse,
 } = communitySlice.actions;
 
@@ -156,4 +163,42 @@ export const getTrendingCommunities =
     });
 
     dispatch(recievedTrendingCommunities(trendingCommunities.communities));
+  };
+
+export const getCommunitySort =
+  (community: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    const userHandle = getState().auth.accountData?.activeHandle;
+    const sortByHandle = getState().community.sortByHandle;
+
+    if (!userHandle) {
+      dispatch(setSortByHandle({}));
+      return;
+    }
+
+    if (!sortByHandle[community]) {
+      const sortBy = await db.getSetting("default_post_sort", {
+        user_handle: userHandle,
+        community,
+      });
+
+      if (sortBy)
+        dispatch(setSortByHandle({ ...sortByHandle, [community]: sortBy }));
+    }
+  };
+
+export const setCommunitySort =
+  (community: string, sortBy: SortType) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    const userHandle = getState().auth.accountData?.activeHandle;
+    const sortByHandle = getState().community.sortByHandle;
+
+    if (!userHandle) return;
+
+    dispatch(setSortByHandle({ ...sortByHandle, [community]: sortBy }));
+
+    db.setSetting("default_post_sort", sortBy, {
+      user_handle: userHandle,
+      community,
+    });
   };

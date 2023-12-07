@@ -14,6 +14,7 @@ import {
   createContext,
   memo,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -38,6 +39,8 @@ import { getSortDuration } from "../../features/feed/endItems/EndPost";
 import ModActions from "../../features/community/mod/ModActions";
 import { useOptimizedIonRouter } from "../../helpers/useOptimizedIonRouter";
 import usePostSort from "../../features/feed/usePostSort";
+import { getCommunitySort } from "../../features/community/communitySlice";
+import { useAppDispatch } from "../../store";
 
 const StyledFeedContent = styled(FeedContent)`
   .ios & {
@@ -136,11 +139,16 @@ const CommunityPageContent = memo(function CommunityPageContent({
   const [_searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useOptimizedIonRouter();
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(getCommunitySort(community));
+  }, [community, dispatch]);
 
   const searchOpen = searchQuery || _searchOpen;
 
   const client = useClient();
-  const [sort, setSort] = usePostSort();
+  const [sort, setSort] = usePostSort(community);
 
   const communityView = useFetchCommunity(community);
 
