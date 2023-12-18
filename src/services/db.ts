@@ -247,6 +247,15 @@ export type SwipeAction =
 export type SwipeDirection = "farStart" | "start" | "end" | "farEnd";
 export type SwipeActions = Record<SwipeDirection, SwipeAction>;
 
+export const ODefaultPostType = {
+  Photo: "photo",
+  Link: "link",
+  Text: "text",
+} as const;
+
+export type DefaultPostType =
+  (typeof ODefaultPostType)[keyof typeof ODefaultPostType];
+
 export type SettingValueTypes = {
   collapse_comment_threads: CommentThreadCollapse;
   user_instance_url_display: InstanceUrlDisplayMode;
@@ -286,6 +295,7 @@ export type SettingValueTypes = {
   upvote_on_save: boolean;
   default_post_sort: SortType;
   default_post_sort_by_feed: SortType;
+  default_post_type: DefaultPostType;
   remember_community_sort: boolean;
 };
 

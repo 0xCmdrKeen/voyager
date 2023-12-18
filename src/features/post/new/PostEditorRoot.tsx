@@ -99,13 +99,17 @@ export default function PostEditorRoot({
 
   const dispatch = useAppDispatch();
 
+  const defaultPostType = useAppSelector(
+    (state) => state.settings.general.posts.type,
+  );
+
   const initialImage =
     existingPost?.post.url && isUrlImage(existingPost.post.url)
       ? existingPost.post.url
       : undefined;
 
   const initialPostType = (() => {
-    if (!existingPost) return "photo";
+    if (!existingPost) return defaultPostType;
 
     if (initialImage) return "photo";
 

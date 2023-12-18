@@ -36,6 +36,8 @@ import {
   ODefaultFeedType,
   TapToCollapseType,
   OTapToCollapseType,
+  DefaultPostType,
+  ODefaultPostType,
 } from "../../services/db";
 import { get, set } from "./storage";
 import { Mode } from "@ionic/core";
@@ -94,6 +96,7 @@ interface SettingsState {
     };
     posts: {
       sort: SortType;
+      type: DefaultPostType;
       disableMarkingRead: boolean;
       markReadOnScroll: boolean;
       showHideReadButton: boolean;
@@ -171,6 +174,7 @@ const initialState: SettingsState = {
     },
     posts: {
       sort: "Active",
+      type: ODefaultPostType.Photo,
       disableMarkingRead: false,
       markReadOnScroll: false,
       showHideReadButton: false,
@@ -349,6 +353,10 @@ export const appearanceSlice = createSlice({
     setDefaultPostSort(state, action: PayloadAction<SortType>) {
       state.general.posts.sort = action.payload;
       db.setSetting("default_post_sort", action.payload);
+    },
+    setDefaultPostType(state, action: PayloadAction<DefaultPostType>) {
+      state.general.posts.type = action.payload;
+      db.setSetting("default_post_type", action.payload);
     },
     setDisableMarkingPostsRead(state, action: PayloadAction<boolean>) {
       state.general.posts.disableMarkingRead = action.payload;
@@ -550,6 +558,7 @@ export const fetchSettingsFromDatabase = createAsyncThunk<SettingsState>(
         "no_subscribed_in_feed",
       );
       const default_post_sort = await db.getSetting("default_post_sort");
+      const default_post_type = await db.getSetting("default_post_type");
 
       return {
         ...state.settings,
@@ -628,6 +637,7 @@ export const fetchSettingsFromDatabase = createAsyncThunk<SettingsState>(
             upvoteOnSave:
               upvote_on_save ?? initialState.general.posts.upvoteOnSave,
             sort: default_post_sort ?? initialState.general.posts.sort,
+            type: default_post_type ?? initialState.general.posts.type,
             rememberCommunitySort:
               remember_community_sort ??
               initialState.general.posts.rememberCommunitySort,
@@ -680,6 +690,7 @@ export const {
   setDeviceMode,
   setDefaultCommentSort,
   setDefaultPostSort,
+  setDefaultPostType,
   settingsReady,
   setDisableMarkingPostsRead,
   setMarkPostsReadOnScroll,

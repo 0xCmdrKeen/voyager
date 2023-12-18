@@ -5,6 +5,7 @@ import InfiniteScrolling from "./InfiniteScrolling";
 import UpvoteOnSave from "./UpvoteOnSave";
 import DefaultSort from "./DefaultSort";
 import RememberCommunitySort from "./RememberCommunitySort";
+import DefaultPostType from "./DefaultPostType";
 
 export default function Posts() {
   return (
@@ -17,6 +18,7 @@ export default function Posts() {
           <IonLabel>Mark Read / Hiding Posts</IonLabel>
         </InsetIonItem>
         <DefaultSort />
+        <DefaultPostType />
         <RememberCommunitySort />
         <InfiniteScrolling />
         <UpvoteOnSave />
