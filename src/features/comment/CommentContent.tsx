@@ -16,12 +16,14 @@ interface CommentContentProps {
   item: Comment | Post;
   showTouchFriendlyLinks?: boolean;
   isMod?: boolean;
+  highlightText?: string | RegExp;
 }
 
 export default function CommentContent({
   item,
   isMod,
   showTouchFriendlyLinks = true,
+  highlightText,
 }: CommentContentProps) {
   const touchFriendlyLinks = useAppSelector(
     (state) => state.settings.general.comments.touchFriendlyLinks,
@@ -47,19 +49,25 @@ export default function CommentContent({
         </p>
       );
 
+    const markdown = "content" in item ? item.content : item.body ?? item.name;
+    const flags = typeof highlightText === "object" ? highlightText.flags : "";
+
     return (
       <>
         <CommentMarkdown>
-          {"content" in item ? item.content : item.body ?? item.name}
+          {highlightText
+            ? markdown.replaceAll(
+                new RegExp(highlightText, flags + "g"),
+                "<mark>$&</mark>",
+              )
+            : markdown}
         </CommentMarkdown>
         {showTouchFriendlyLinks && touchFriendlyLinks && (
-          <CommentLinks
-            markdown={"content" in item ? item.content : item.body ?? item.name}
-          />
+          <CommentLinks markdown={markdown} />
         )}
       </>
     );
-  }, [item, showTouchFriendlyLinks, touchFriendlyLinks, isMod]);
+  }, [item, showTouchFriendlyLinks, touchFriendlyLinks, isMod, highlightText]);
 
   return content;
 }

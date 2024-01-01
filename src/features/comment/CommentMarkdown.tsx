@@ -2,6 +2,7 @@ import { useAppSelector } from "../../store";
 import InAppExternalLink from "../shared/InAppExternalLink";
 import Markdown from "../shared/Markdown";
 import MarkdownImg from "../shared/MarkdownImg";
+import rehypeRaw from "rehype-raw";
 
 interface CommentMarkdownProps {
   children: string;
@@ -32,6 +33,7 @@ export default function CommentMarkdown({ children }: CommentMarkdownProps) {
             />
           ),
       }}
+      rehypePlugins={[[rehypeRaw, { passThrough: ["mark"] }]]}
     >
       {children}
     </Markdown>

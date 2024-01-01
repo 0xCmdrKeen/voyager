@@ -173,6 +173,7 @@ const AmountCollapsed = styled.div`
 interface CommentProps {
   comment: CommentView;
   highlightedCommentId?: number;
+  highlightCommentText?: string | RegExp;
   depth?: number;
   absoluteDepth?: number;
   onClick?: (e: MouseEvent) => void;
@@ -196,6 +197,7 @@ interface CommentProps {
 export default function Comment({
   comment: commentView,
   highlightedCommentId,
+  highlightCommentText,
   depth,
   absoluteDepth,
   onClick,
@@ -291,6 +293,7 @@ export default function Comment({
                       <CommentContent
                         item={comment}
                         showTouchFriendlyLinks={!context}
+                        highlightText={highlightCommentText}
                         isMod={!!canModerate}
                       />
                       {context}
