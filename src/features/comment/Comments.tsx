@@ -1,6 +1,7 @@
 import React, {
   forwardRef,
   useCallback,
+  useContext,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -38,6 +39,7 @@ import { IndexedVirtuaItem } from "../../helpers/virtua";
 import FeedLoadMoreFailed from "../feed/endItems/FeedLoadMoreFailed";
 import usePreservePositionFromBottomInScrollView from "../../helpers/usePreservePositionFromBottomInScrollView";
 import { postDetailPageHasVirtualScrollEnabled } from "../../pages/posts/PostPage";
+import { CommentSearchContext } from "./CommentSearchContext";
 
 const ScrollViewContainer = styled.div`
   width: 100%;
@@ -75,29 +77,19 @@ const MAX_COMMENT_PATH_CONTEXT_DEPTH = 2;
 export type CommentsHandle = {
   appendComments: (comments: CommentView[]) => void;
   prependComments: (comments: CommentView[]) => void;
-  searchComments: (query: string | RegExp) => CommentView[];
 };
 
 interface CommentsProps {
   header: React.ReactNode;
   postId: number;
   commentPath?: string;
-  commentMatch?: CommentView;
   threadCommentId?: string;
   sort: CommentSortType;
   bottomPadding?: number;
 }
 
 export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
-  {
-    header,
-    postId,
-    commentPath,
-    commentMatch,
-    sort,
-    bottomPadding,
-    threadCommentId,
-  },
+  { header, postId, commentPath, sort, bottomPadding, threadCommentId },
   ref,
 ) {
   const dispatch = useAppDispatch();
@@ -106,7 +98,6 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
   const loadingRef = useRef(false);
   const finishedPagingRef = useRef(false);
   const [comments, setComments] = useState<CommentView[]>([]);
-  const [searchQuery, setSearchQuery] = useState<string | RegExp>();
 
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -139,12 +130,15 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
   useImperativeHandle(ref, () => ({
     appendComments,
     prependComments,
-    searchComments,
   }));
 
   const [maxContext, setMaxContext] = useState(
     getCommentContextDepthForPath(commentPath),
   );
+
+  const { query, matches, setMatches, currentMatch } =
+    useContext(CommentSearchContext);
+  const commentMatch = matches[currentMatch];
 
   useEffect(() => {
     setMaxContext(getCommentContextDepthForPath(commentPath));
@@ -402,15 +396,18 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
   }
 
   const searchComments = useCallback(
-    (query: string | RegExp) => {
-      setSearchQuery(query);
+    (query: string) => {
       return searchCommentTree(
         commentTree,
-        ({ content }) => !!content.match(query),
+        ({ content }) => !!content.match(new RegExp(query, "i")),
       );
     },
     [commentTree],
   );
+
+  useEffect(() => {
+    if (query.length > 0) setMatches(searchComments(query));
+  }, [query, searchComments, setMatches]);
 
   async function handleRefresh(event: RefresherCustomEvent) {
     try {
@@ -425,7 +422,6 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
       <CommentTree
         comment={comment}
         highlightedCommentId={highlightedCommentId}
-        highlightCommentText={searchQuery}
         key={comment.comment_view.comment.id}
         first={index === 0}
         rootIndex={index + 1} /* Plus header index = 0 */
@@ -452,7 +448,6 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
   }, [
     commentTree,
     highlightedCommentId,
-    searchQuery,
     commentPath,
     maxContext,
     preservePositionFromBottomInScrollView,

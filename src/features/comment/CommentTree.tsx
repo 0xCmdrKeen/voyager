@@ -14,7 +14,6 @@ export const MAX_COMMENT_DEPTH = 10;
 interface CommentTreeProps {
   comment: CommentNodeI;
   highlightedCommentId?: number;
-  highlightCommentText?: string | RegExp;
   first?: boolean;
   fullyCollapsed?: boolean;
   rootIndex: number;
@@ -24,7 +23,6 @@ interface CommentTreeProps {
 export default function CommentTree({
   comment,
   highlightedCommentId,
-  highlightCommentText,
   first,
   fullyCollapsed,
   rootIndex,
@@ -92,7 +90,6 @@ export default function CommentTree({
       <Comment
         comment={comment.comment_view}
         highlightedCommentId={highlightedCommentId}
-        highlightCommentText={highlightCommentText}
         depth={comment.absoluteDepth - baseDepth}
         absoluteDepth={comment.absoluteDepth}
         onClick={(e) => {
@@ -115,7 +112,6 @@ export default function CommentTree({
       <CommentTree
         key={comment.comment_view.comment.id}
         highlightedCommentId={highlightedCommentId}
-        highlightCommentText={highlightCommentText}
         comment={comment}
         fullyCollapsed={collapsed || fullyCollapsed}
         rootIndex={rootIndex}

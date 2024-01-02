@@ -1,8 +1,8 @@
 import { useIonViewDidEnter } from "@ionic/react";
 import { useAppDispatch, useAppSelector } from "../../../store";
 import Comments, { CommentsHandle } from "../../comment/Comments";
-import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
-import { CommentSortType, CommentView, PostView } from "lemmy-js-client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CommentSortType, PostView } from "lemmy-js-client";
 import ViewAllComments from "./ViewAllComments";
 import JumpFab from "../../comment/JumpFab";
 import PostHeader from "./PostHeader";
@@ -14,19 +14,20 @@ interface PostDetailProps {
 
   commentPath: string | undefined;
   threadCommentId: string | undefined;
-  commentMatch?: CommentView;
 }
 
-export default forwardRef<CommentsHandle, PostDetailProps>(function PostDetail(
-  { post, sort, commentPath, threadCommentId, commentMatch },
-  commentsRef,
-) {
+export default function PostDetail({
+  post,
+  sort,
+  commentPath,
+  threadCommentId,
+}: PostDetailProps) {
   const dispatch = useAppDispatch();
   const { showJumpButton, jumpButtonPosition } = useAppSelector(
     (state) => state.settings.general.comments,
   );
   const [ionViewEntered, setIonViewEntered] = useState(false);
-  // const commentsRef = useRef<CommentsHandle>(null);
+  const commentsRef = useRef<CommentsHandle>(null);
 
   const [viewAllCommentsSpace, setViewAllCommentsSpace] = useState(70); // px
 
@@ -70,15 +71,12 @@ export default forwardRef<CommentsHandle, PostDetailProps>(function PostDetail(
           <PostHeader
             post={post}
             onPrependComment={(comment) =>
-              commentsRef &&
-              "current" in commentsRef &&
               commentsRef.current?.prependComments([comment])
             }
           />
         }
         postId={post.post.id}
         commentPath={commentPath}
-        commentMatch={commentMatch}
         threadCommentId={threadCommentId}
         sort={sort}
         bottomPadding={bottomPadding}
@@ -87,4 +85,4 @@ export default forwardRef<CommentsHandle, PostDetailProps>(function PostDetail(
       {!commentPath && showJumpButton && <JumpFab />}
     </>
   );
-});
+}

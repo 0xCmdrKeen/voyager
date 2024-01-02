@@ -1,11 +1,12 @@
 import { Comment, Post } from "lemmy-js-client";
-import { useMemo } from "react";
+import { useContext, useMemo } from "react";
 import CommentMarkdown from "./CommentMarkdown";
 import CommentLinks from "./links/CommentLinks";
 import { useAppSelector } from "../../store";
 import { IonIcon } from "@ionic/react";
 import { trashOutline } from "ionicons/icons";
 import styled from "@emotion/styled";
+import { CommentSearchContext } from "./CommentSearchContext";
 
 const TrashIconContainer = styled.span`
   padding-inline-start: 0.4em;
@@ -16,18 +17,17 @@ interface CommentContentProps {
   item: Comment | Post;
   showTouchFriendlyLinks?: boolean;
   isMod?: boolean;
-  highlightText?: string | RegExp;
 }
 
 export default function CommentContent({
   item,
   isMod,
   showTouchFriendlyLinks = true,
-  highlightText,
 }: CommentContentProps) {
   const touchFriendlyLinks = useAppSelector(
     (state) => state.settings.general.comments.touchFriendlyLinks,
   );
+  const { query } = useContext(CommentSearchContext);
 
   const content = useMemo(() => {
     if (item.deleted)
@@ -50,16 +50,12 @@ export default function CommentContent({
       );
 
     const markdown = "content" in item ? item.content : item.body ?? item.name;
-    const flags = typeof highlightText === "object" ? highlightText.flags : "";
 
     return (
       <>
         <CommentMarkdown>
-          {highlightText
-            ? markdown.replaceAll(
-                new RegExp(highlightText, flags + "g"),
-                "<mark>$&</mark>",
-              )
+          {query
+            ? markdown.replaceAll(new RegExp(query, "gi"), "<mark>$&</mark>")
             : markdown}
         </CommentMarkdown>
         {showTouchFriendlyLinks && touchFriendlyLinks && (
@@ -67,7 +63,7 @@ export default function CommentContent({
         )}
       </>
     );
-  }, [item, showTouchFriendlyLinks, touchFriendlyLinks, isMod, highlightText]);
+  }, [item, showTouchFriendlyLinks, touchFriendlyLinks, isMod, query]);
 
   return content;
 }

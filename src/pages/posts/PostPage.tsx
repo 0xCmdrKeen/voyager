@@ -17,10 +17,16 @@ import {
 import { useAppDispatch, useAppSelector } from "../../store";
 import { useParams } from "react-router";
 import styled from "@emotion/styled";
-import React, { memo, useCallback, useEffect, useState } from "react";
+import React, {
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { getPost } from "../../features/post/postSlice";
 import AppBackButton from "../../features/shared/AppBackButton";
-import { CommentSortType, CommentView } from "lemmy-js-client";
+import { CommentSortType } from "lemmy-js-client";
 import { useBuildGeneralBrowseLink } from "../../helpers/routes";
 import CommentSort from "../../features/comment/CommentSort";
 import MoreActions from "../../features/post/shared/MoreActions";
@@ -36,7 +42,10 @@ import {
   chevronForwardOutline,
   closeOutline,
 } from "ionicons/icons";
-import { CommentsHandle } from "../../features/comment/Comments";
+import {
+  CommentSearchContext,
+  CommentSearchProvider,
+} from "../../features/comment/CommentSearchContext";
 
 export const CenteredSpinner = styled(IonSpinner)`
   position: relative;
@@ -64,12 +73,14 @@ export default function PostPage() {
     useParams<PostPageParams>();
 
   return (
-    <PostPageContent
-      id={id}
-      commentPath={commentPath}
-      community={community}
-      threadCommentId={threadCommentId}
-    />
+    <CommentSearchProvider>
+      <PostPageContent
+        id={id}
+        commentPath={commentPath}
+        community={community}
+        threadCommentId={threadCommentId}
+      />
+    </CommentSearchProvider>
   );
 }
 
@@ -89,10 +100,14 @@ const PostPageContent = memo(function PostPageContent({
   const [sort, setSort] = useState<CommentSortType>(defaultSort);
   const postDeletedById = useAppSelector((state) => state.post.postDeletedById);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [matches, setMatches] = useState<CommentView[]>([]);
-  const [currentMatch, setCurrentMatch] = useState(0);
-  const commentsRef = useRef<CommentsHandle>(null);
+  const {
+    query,
+    setQuery,
+    matches,
+    setMatches,
+    currentMatch,
+    setCurrentMatch,
+  } = useContext(CommentSearchContext);
   // eslint-disable-next-line no-undef
   const searchbarRef = useRef<HTMLIonSearchbarElement>(null);
 
@@ -153,11 +168,9 @@ const PostPageContent = memo(function PostPageContent({
 
     return (
       <PostDetail
-        ref={commentsRef}
         post={post}
         sort={sort}
         commentPath={commentPath}
-        commentMatch={matches[currentMatch]}
         threadCommentId={threadCommentId}
       />
     );
@@ -168,20 +181,14 @@ const PostPageContent = memo(function PostPageContent({
     setTimeout(() => searchbarRef.current?.setFocus(), 100);
   }, [searchbarRef]);
 
-  const updateSearchQuery = useCallback(
-    (query: string) => {
-      setSearchQuery(query);
-      if (commentsRef.current && query.length > 0) {
-        setMatches(commentsRef.current.searchComments(new RegExp(query, "i")));
-        setCurrentMatch(0);
-      }
-    },
-    [commentsRef],
-  );
+  const updateSearchQuery = (query: string) => {
+    setQuery(query);
+    setCurrentMatch(0);
+  };
 
   const dismissSearch = () => {
     setSearchOpen(false);
-    setSearchQuery("");
+    setQuery("");
     setMatches([]);
   };
 
@@ -228,7 +235,7 @@ const PostPageContent = memo(function PostPageContent({
               placeholder="Search comments"
               showClearButton="focus"
               onIonInput={(e) => updateSearchQuery(e.detail.value ?? "")}
-              value={searchQuery}
+              value={query}
               enterkeyhint="search"
               style={{ paddingBottom: "1px" }}
               ref={searchbarRef}
