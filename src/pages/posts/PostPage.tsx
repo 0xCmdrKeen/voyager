@@ -61,6 +61,16 @@ export const AnnouncementIcon = styled(IonIcon)`
   color: var(--ion-color-success);
 `;
 
+const StyledIonToolbar = styled(IonToolbar)`
+  ion-searchbar {
+    padding-bottom: 1px;
+  }
+
+  ion-buttons {
+    align-self: center;
+  }
+`;
+
 interface PostPageParams {
   id: string;
   commentPath?: string;
@@ -230,17 +240,16 @@ const PostPageContent = memo(function PostPageContent({
       <Content>{renderPost()}</Content>
       <IonFooter>
         {searchOpen && (
-          <IonToolbar>
+          <StyledIonToolbar>
             <IonSearchbar
               placeholder="Search comments"
               showClearButton="focus"
               onIonInput={(e) => updateSearchQuery(e.detail.value ?? "")}
               value={query}
               enterkeyhint="search"
-              style={{ paddingBottom: "1px" }}
               ref={searchbarRef}
             />
-            <IonButtons slot="end" style={{ alignSelf: "center" }}>
+            <IonButtons slot="end">
               <IonButton
                 disabled={currentMatch === 0}
                 onClick={() => setCurrentMatch((i) => i - 1)}
@@ -257,7 +266,7 @@ const PostPageContent = memo(function PostPageContent({
                 <IonIcon icon={closeOutline} />
               </IonButton>
             </IonButtons>
-          </IonToolbar>
+          </StyledIonToolbar>
         )}
       </IonFooter>
     </IonPage>
