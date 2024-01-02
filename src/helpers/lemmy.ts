@@ -198,7 +198,7 @@ export function insertCommentIntoTree(
 
   const parentId = getCommentParentId(cv.comment);
   if (parentId) {
-    const parent_comment = searchCommentTree(tree, parentId);
+    const parent_comment = findComment(tree, parentId);
     if (parent_comment) {
       node.depth = parent_comment.depth + 1;
       parent_comment.children.unshift(node);
@@ -208,7 +208,7 @@ export function insertCommentIntoTree(
   }
 }
 
-export function searchCommentTree(
+function findComment(
   tree: CommentNodeI[],
   id: number,
 ): CommentNodeI | undefined {
@@ -218,7 +218,7 @@ export function searchCommentTree(
     }
 
     for (const child of node.children) {
-      const res = searchCommentTree([child], id);
+      const res = findComment([child], id);
 
       if (res) {
         return res;
@@ -226,6 +226,25 @@ export function searchCommentTree(
     }
   }
   return undefined;
+}
+
+export function searchCommentTree(
+  tree: CommentNodeI[],
+  matchFn: (comment: Comment) => boolean,
+) {
+  let res: CommentView[] = [];
+
+  for (const node of tree) {
+    if (matchFn(node.comment_view.comment)) {
+      res.push(node.comment_view);
+    }
+
+    for (const child of node.children) {
+      res = res.concat(searchCommentTree([child], matchFn));
+    }
+  }
+
+  return res;
 }
 
 export function getFlattenedChildren(comment: CommentNodeI): CommentView[] {

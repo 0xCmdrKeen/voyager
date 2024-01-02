@@ -10,6 +10,7 @@ import React, {
 import {
   buildCommentsTreeWithMissing,
   getDepthFromCommentPath,
+  searchCommentTree,
 } from "../../helpers/lemmy";
 import CommentTree, { MAX_COMMENT_DEPTH } from "./CommentTree";
 import { IonRefresher, IonRefresherContent, IonSpinner } from "@ionic/react";
@@ -74,19 +75,29 @@ const MAX_COMMENT_PATH_CONTEXT_DEPTH = 2;
 export type CommentsHandle = {
   appendComments: (comments: CommentView[]) => void;
   prependComments: (comments: CommentView[]) => void;
+  searchComments: (query: string | RegExp) => CommentView[];
 };
 
 interface CommentsProps {
   header: React.ReactNode;
   postId: number;
   commentPath?: string;
+  commentMatch?: CommentView;
   threadCommentId?: string;
   sort: CommentSortType;
   bottomPadding?: number;
 }
 
 export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
-  { header, postId, commentPath, sort, bottomPadding, threadCommentId },
+  {
+    header,
+    postId,
+    commentPath,
+    commentMatch,
+    sort,
+    bottomPadding,
+    threadCommentId,
+  },
   ref,
 ) {
   const dispatch = useAppDispatch();
@@ -95,6 +106,7 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
   const loadingRef = useRef(false);
   const finishedPagingRef = useRef(false);
   const [comments, setComments] = useState<CommentView[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string | RegExp>();
 
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -127,6 +139,7 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
   useImperativeHandle(ref, () => ({
     appendComments,
     prependComments,
+    searchComments,
   }));
 
   const [maxContext, setMaxContext] = useState(
@@ -144,6 +157,7 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
   })();
 
   const highlightedCommentId = (() => {
+    if (commentMatch) return commentMatch.comment.id;
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     if (commentPath) return +commentPath.split(".").pop()!;
     if (threadCommentId) return +threadCommentId;
@@ -229,9 +243,9 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
   // This is super hacky logic to scroll the view received new comments
   const scrolledRef = useRef(false);
   useEffect(() => {
-    if (scrolledRef.current) return;
+    if (scrolledRef.current && !commentMatch) return;
     if (focusCommentIfNeeded()) scrolledRef.current = true;
-  }, [filteredComments, focusCommentIfNeeded]);
+  }, [filteredComments, focusCommentIfNeeded, commentMatch]);
 
   const commentTree = useMemo(() => {
     return filteredComments.length
@@ -387,6 +401,17 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
     );
   }
 
+  const searchComments = useCallback(
+    (query: string | RegExp) => {
+      setSearchQuery(query);
+      return searchCommentTree(
+        commentTree,
+        ({ content }) => !!content.match(query),
+      );
+    },
+    [commentTree],
+  );
+
   async function handleRefresh(event: RefresherCustomEvent) {
     try {
       await Promise.all([fetchComments(true), dispatch(getPost(postId))]);
@@ -400,6 +425,7 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
       <CommentTree
         comment={comment}
         highlightedCommentId={highlightedCommentId}
+        highlightCommentText={searchQuery}
         key={comment.comment_view.comment.id}
         first={index === 0}
         rootIndex={index + 1} /* Plus header index = 0 */
@@ -426,6 +452,7 @@ export default forwardRef<CommentsHandle, CommentsProps>(function Comments(
   }, [
     commentTree,
     highlightedCommentId,
+    searchQuery,
     commentPath,
     maxContext,
     preservePositionFromBottomInScrollView,

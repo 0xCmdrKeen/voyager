@@ -1,4 +1,5 @@
 import { IonButton, IonIcon, useIonActionSheet } from "@ionic/react";
+import { OverlayEventDetail } from "@ionic/core";
 import {
   arrowDownOutline,
   arrowUndoOutline,
@@ -12,6 +13,7 @@ import {
   pencilOutline,
   peopleOutline,
   personOutline,
+  searchOutline,
   shareOutline,
   textOutline,
   trashOutline,
@@ -48,12 +50,14 @@ interface MoreActionsProps {
   post: PostView;
   className?: string;
   onFeed?: boolean;
+  onDidDismiss?: (event: CustomEvent<OverlayEventDetail>) => void;
 }
 
 export default function MoreActions({
   post,
   className,
   onFeed,
+  onDidDismiss,
 }: MoreActionsProps) {
   const [presentActionSheet] = useIonActionSheet();
   const [presentSecondaryActionSheet] = useIonActionSheet();
@@ -250,7 +254,11 @@ export default function MoreActions({
                 dispatch(fn(post.post.id));
               },
             }
-          : undefined,
+          : {
+              text: "Find in Comments",
+              data: "search",
+              icon: searchOutline,
+            },
         {
           text: "Share",
           data: "share",
@@ -279,6 +287,7 @@ export default function MoreActions({
           role: "cancel",
         },
       ].filter(notEmpty),
+      onDidDismiss,
     });
   }
 

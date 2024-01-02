@@ -1,11 +1,14 @@
 import {
+  IonButton,
   IonButtons,
   IonContent,
+  IonFooter,
   IonHeader,
   IonIcon,
   IonPage,
   IonRefresher,
   IonRefresherContent,
+  IonSearchbar,
   IonSpinner,
   IonTitle,
   IonToolbar,
@@ -17,7 +20,7 @@ import styled from "@emotion/styled";
 import React, { memo, useCallback, useEffect, useState } from "react";
 import { getPost } from "../../features/post/postSlice";
 import AppBackButton from "../../features/shared/AppBackButton";
-import { CommentSortType } from "lemmy-js-client";
+import { CommentSortType, CommentView } from "lemmy-js-client";
 import { useBuildGeneralBrowseLink } from "../../helpers/routes";
 import CommentSort from "../../features/comment/CommentSort";
 import MoreActions from "../../features/post/shared/MoreActions";
@@ -28,6 +31,12 @@ import { formatNumber } from "../../helpers/number";
 import MoreModActions from "../../features/post/shared/MoreModAction";
 import { useSetActivePage } from "../../features/auth/AppContext";
 import { useRef } from "react";
+import {
+  chevronBackOutline,
+  chevronForwardOutline,
+  closeOutline,
+} from "ionicons/icons";
+import { CommentsHandle } from "../../features/comment/Comments";
 
 export const CenteredSpinner = styled(IonSpinner)`
   position: relative;
@@ -79,6 +88,13 @@ const PostPageContent = memo(function PostPageContent({
   );
   const [sort, setSort] = useState<CommentSortType>(defaultSort);
   const postDeletedById = useAppSelector((state) => state.post.postDeletedById);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [matches, setMatches] = useState<CommentView[]>([]);
+  const [currentMatch, setCurrentMatch] = useState(0);
+  const commentsRef = useRef<CommentsHandle>(null);
+  // eslint-disable-next-line no-undef
+  const searchbarRef = useRef<HTMLIonSearchbarElement>(null);
 
   const postIfFound = typeof post === "object" ? post : undefined;
 
@@ -137,13 +153,37 @@ const PostPageContent = memo(function PostPageContent({
 
     return (
       <PostDetail
+        ref={commentsRef}
         post={post}
         sort={sort}
         commentPath={commentPath}
+        commentMatch={matches[currentMatch]}
         threadCommentId={threadCommentId}
       />
     );
   }
+
+  const presentSearch = useCallback(() => {
+    setSearchOpen(true);
+    setTimeout(() => searchbarRef.current?.setFocus(), 100);
+  }, [searchbarRef]);
+
+  const updateSearchQuery = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      if (commentsRef.current && query.length > 0) {
+        setMatches(commentsRef.current.searchComments(new RegExp(query, "i")));
+        setCurrentMatch(0);
+      }
+    },
+    [commentsRef],
+  );
+
+  const dismissSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    setMatches([]);
+  };
 
   const title = (() => {
     if (threadCommentId) return "Thread";
@@ -169,11 +209,50 @@ const PostPageContent = memo(function PostPageContent({
           <IonButtons slot="end">
             {postIfFound && <MoreModActions post={postIfFound} />}
             <CommentSort sort={sort} setSort={setSort} />
-            {postIfFound && <MoreActions post={postIfFound} />}
+            {postIfFound && (
+              <MoreActions
+                post={postIfFound}
+                onDidDismiss={(e) => {
+                  if (e.detail.data === "search") presentSearch();
+                }}
+              />
+            )}
           </IonButtons>
         </IonToolbar>
       </IonHeader>
       <Content>{renderPost()}</Content>
+      <IonFooter>
+        {searchOpen && (
+          <IonToolbar>
+            <IonSearchbar
+              placeholder="Search comments"
+              showClearButton="focus"
+              onIonInput={(e) => updateSearchQuery(e.detail.value ?? "")}
+              value={searchQuery}
+              enterkeyhint="search"
+              style={{ paddingBottom: "1px" }}
+              ref={searchbarRef}
+            />
+            <IonButtons slot="end" style={{ alignSelf: "center" }}>
+              <IonButton
+                disabled={currentMatch === 0}
+                onClick={() => setCurrentMatch((i) => i - 1)}
+              >
+                <IonIcon icon={chevronBackOutline} />
+              </IonButton>
+              <IonButton
+                disabled={currentMatch >= matches.length - 1}
+                onClick={() => setCurrentMatch((i) => i + 1)}
+              >
+                <IonIcon icon={chevronForwardOutline} />
+              </IonButton>
+              <IonButton onClick={dismissSearch}>
+                <IonIcon icon={closeOutline} />
+              </IonButton>
+            </IonButtons>
+          </IonToolbar>
+        )}
+      </IonFooter>
     </IonPage>
   );
 });
